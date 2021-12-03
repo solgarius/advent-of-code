@@ -1,0 +1,23 @@
+{
+  "name": "advent-of-code-2021",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/solgarius/advent-of-code-2021.git"
+  },
+  "author": "Nick Beckenham",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/solgarius/advent-of-code-2021/issues"
+  },
+  "homepage": "https://github.com/solgarius/advent-of-code-2021#readme",
+  "dependencies": {
+    "yargs": "^17.3.0"
+  }
+}
