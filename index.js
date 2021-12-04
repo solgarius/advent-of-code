@@ -2,6 +2,7 @@ const yargs = require('yargs');
 
 const argv = yargs
     .option('d', { description: 'Run advent of code day', type: 'number' })
+    .option('t', { description: 'test mode', type: 'boolean' })
     .help()
     .alias('help', 'h')
     .argv;
@@ -27,5 +28,5 @@ if (argv.d) {
 
 async function run(module){
     const day = await module
-    return day.run()
+    return day.run(argv.t)
 }

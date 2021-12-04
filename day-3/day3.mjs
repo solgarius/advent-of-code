@@ -1,11 +1,8 @@
-import {readFile} from 'fs/promises'
-import path from 'path'
-import {fileURLToPath} from 'url'
+import {getLines} from '../util/utility.mjs'
 import _ from 'lodash'
 
-async function run() {
-  const TEST = false
-  const diagnostics = TEST ? await getTestDiagnosticReport() : await getDiagnosticReport()
+async function run(testMode) {
+  const diagnostics = testMode ? await getTestDiagnosticReport() : await getDiagnosticReport()
   let {epsilon, gamma} = await runEpsilonGamma(diagnostics)
   console.log(`epsilon ${epsilon}, gamma ${gamma}, power consumption: ${gamma * epsilon}`)
   const {oxygenGeneratorRating, co2ScrubberRating} = await runLifeSupportRating(diagnostics)
@@ -117,10 +114,7 @@ async function getTestDiagnosticReport() {
 }
 
 async function getDiagnosticReport() {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const content = await readFile(path.resolve(__dirname, './diagnostics.csv'), 'UTF-8')
-  const lines = content.split(/\r?\n/);
+  const lines = await getLines('./day-3/diagnostics.csv')
   return getDiagnosticsFromLines(lines)
 }
 

@@ -1,10 +1,7 @@
-import {readFile} from 'fs/promises'
-import path from 'path'
-import {fileURLToPath} from 'url';
+import {getLines} from '../util/utility.mjs'
 
-async function run() {
-    const TEST = false
-    const movements = TEST ? await getTestMovements() : await getMovements()
+async function run(testMode) {
+    const movements = testMode ? await getTestMovements() : await getMovements()
     let {horizontal, depth} = await runSimple(movements)
     console.log(`forward ${horizontal}, depth ${depth}, mul: ${depth * horizontal}`)
     const withAim = await runWithAim(movements)
@@ -57,10 +54,7 @@ async function getTestMovements() {
 }
 
 async function getMovements() {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const content = await readFile(path.resolve(__dirname, './movements.csv'), 'UTF-8')
-    const lines = content.split(/\r?\n/);
+    const lines = await getLines('./day-2/movements.csv')
     let movements = []
     for (const line of lines) {
         try {
