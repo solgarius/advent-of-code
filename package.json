@@ -19,6 +19,8 @@
   "homepage": "https://github.com/solgarius/advent-of-code-2021#readme",
   "dependencies": {
     "lodash": "^4.17.21",
+    "ms": "^2.1.3",
+    "simple-statistics": "^7.7.0",
     "yargs": "^17.3.0"
   }
 }
