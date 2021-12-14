@@ -1,35 +1,43 @@
 import {getLines} from '../util/utility.mjs'
 import _ from 'lodash'
-import {performance} from 'perf_hooks'
-import ms from 'ms'
 
 async function run(testMode) {
-  const CHUNK_SIZE = 4
   const {polymer, rules} = await getPolymerData(testMode)
-  const chunkedPolymer = {}
-  addChunks(chunkedPolymer, polymer, CHUNK_SIZE)
-  console.log(chunkedPolymer, rules)
-  const newPolymer = doInsertions(chunkedPolymer, rules, 10, CHUNK_SIZE)
-  console.log(newPolymer)
-  const {minCount, maxCount} = getCount(newPolymer)
-  console.log(`Max - Min: ${maxCount - minCount}`)
+  const polymerByPairs1 = doInsertions(polymer, rules, 10)
+  const count1 = getCount(polymer, polymerByPairs1)
+  console.log(`Max - Min: ${count1.maxCount - count1.minCount}`)
+  const polymerByPairs2 = doInsertions(polymer, rules, 40)
+  const count2 = getCount(polymer, polymerByPairs2)
+  console.log(`Max - Min: ${count2.maxCount - count2.minCount}`)
 }
 
-function doInsertions(chunkedPolymer, rules, numSteps, chunkSize = 4) {
-  for (let i = 0; i < numSteps; i++) {
-    const t0 = performance.now()
-    doStep(chunkedPolymer, rules, chunkSize)
-    const t1 = performance.now()
-    console.log(`After Step ${i + 1}: ${ms(Math.round(t1 - t0))}`)
+function toPairs(polymer) {
+  const polymerByPairs = {}
+  for (let i = 0; i < polymer.length - 1; i++) {
+    const str = polymer[i] + polymer[i + 1]
+    polymerByPairs[str] = (polymerByPairs[str] || 0) + 1
   }
-  return chunkedPolymer
+  return polymerByPairs
 }
 
-function getCount(polymer) {
+function doInsertions(polymer, rules, numSteps) {
+  const polymerByPairs = toPairs(polymer)
+
+  for (let i = 0; i < numSteps; i++) {
+    doStep(polymerByPairs, rules)
+  }
+  return polymerByPairs
+}
+
+function getCount(originalPolymer, polymerByPairs) {
   const counts = {}
-  _.each(polymer, char => {
-    counts[char] = (counts[char] || 0) + 1
+  const char = originalPolymer[0]
+  counts[char] = 1
+  _.each(polymerByPairs, (count, pair) => {
+    const char = pair.charAt(1)
+    counts[char] = (counts[char] || 0) + count
   })
+  // console.log(counts)
   let minCount = Number.MAX_SAFE_INTEGER
   let maxCount = 0
   _.each(counts, count => {
@@ -43,40 +51,30 @@ function getCount(polymer) {
   return {minCount, maxCount}
 }
 
-function addChunks(chunkedPolymer, polymerArray, chunkSize) {
-  const chunks = _.chunk(polymerArray, chunkSize)
-  _.each(chunks, chunk => {
-    const chunkStr = chunk.join('')
-    if (chunkStr.length < chunkSize) {
-      chunkedPolymer.partial = chunkStr
-    } else {
-      chunkedPolymer[chunkStr] = (chunkedPolymer[chunkStr] || 0) + 1
+
+function doStep(polymerByPairs, rules) {
+  // console.log('doStep', polymerByPairs)
+  const oldPolymerByPairs = _.cloneDeep(polymerByPairs)
+  const addedPairs = {}
+  const removedPairs = {}
+  _.each(oldPolymerByPairs, (count, pair) => {
+    // split the pair
+    if (rules[pair] && count > 0) {
+      const newPair1 = pair.charAt(0) + rules[pair]
+      const newPair2 = rules[pair] + pair.charAt(1)
+      removedPairs[pair] = (removedPairs[pair] || 0) + count
+      addedPairs[newPair1] = (addedPairs[newPair1] || 0) + count
+      addedPairs[newPair2] = (addedPairs[newPair2] || 0) + count
+      // console.log('doStep', pair, rules[pair], polymerByPairs)
     }
   })
-}
-
-function doStep(chunkedPolymer, rules, chunkSize) {
-  let currentNewPolymer = []
-  _.each(chunkedPolymer, chunk => {
-    // polymer chunk will always be 2n-1 the length of the chunk size. So need to merge a few chunks together then re-chunk
-    const polymerChunk = doStepForChunk(chunk, rules)
-    currentNewPolymer = currentNewPolymer.concat(polymerChunk)
-    if (currentNewPolymer.length % chunk === 0) {
-      addChunks(chunkedPolymer, currentNewPolymer, chunkSize)
-      currentNewPolymer = []
-    }
+  _.each(addedPairs, (count, key) => {
+    polymerByPairs[key] = (polymerByPairs[key] || 0) + count
   })
-}
-
-function doStepForChunk(polymer, rules) {
-  const newPolymer = [polymer[0]]
-  for (let i = 0; i < polymer.length - 1; i++) {
-    const str = polymer[i] + polymer[i + 1]
-    if (rules[str]) {
-      newPolymer.push(rules[str], polymer[i + 1])
-    }
-  }
-  return newPolymer
+  _.each(removedPairs, (count, key) => {
+    polymerByPairs[key] = (polymerByPairs[key] || 0) - count
+  })
+  // console.log('doneStep', polymerByPairs)
 }
 
 async function getPolymerData(isTest) {
