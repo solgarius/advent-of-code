@@ -7,7 +7,7 @@ import {performance} from 'perf_hooks'
 const NUM_DIGITS = 9
 const NUM_BACK_DIGITS = 14 - NUM_DIGITS
 const SMALLEST = true
-const MODE = 'cumulative'
+const MODE = 'fast'
 
 async function run(testMode) {
   let fullProgram = await getData(testMode)
@@ -15,7 +15,112 @@ async function run(testMode) {
     runSlow(fullProgram)
   } else if (MODE === 'cumulative') {
     runCumulative(fullProgram)
+  } else if (MODE === 'fast') {
+    let high = runFast(fullProgram, false)
+    console.log(' ')
+    let low = runFast(fullProgram, true)
+    console.log(`High: ${high.i} high Z: ${high.z} | Low: ${low.i} low Z: ${low.z}`)
   }
+}
+
+function execCustomCommand(state, input, zVal, xVal, yVal) {
+  if (!input) {
+    return state
+  }
+  let action = zVal === 1 ? 'push' : 'pop'
+  let z = state.z
+  let x = ((z % 26) + xVal) === input ? 0 : 1
+  if (action === 'pop') {
+    z = Math.trunc(z / 26)
+  }
+  if (x) {
+    z = 26 * z + input + yVal
+  }
+  return {
+    w: input,
+    x,
+    y: x ? (input + yVal) : 0,
+    z
+  }
+}
+
+
+function runFast(fullProgram, smallest = false) {
+  let input = new Array(14)
+  /**
+   *   0 [ push, 11, 6 ],
+   *   1 [ push, 11, 14 ],
+   *   2 [ push, 15, 13 ],
+   *   3 [ pop, -14, 1 ],
+   *   4 [ push, 10, 6 ],
+   *   5 [ pop, 0, 13 ],
+   *   6 [ pop, -6, 6 ],
+   *   7 [ push, 13, 3 ],
+   *   8 [ pop, -3, 8 ],
+   *   9 [ push, 13, 14 ],
+   *   10 [ push, 15, 4 ],
+   *   11 [ pop, -2, 7 ],
+   *   12 [ pop, -9, 15 ],
+   *   13 [ pop, -2, 1 ]
+   */
+  let actions = _.map(fullProgram, (command, index) => {
+    return {
+      i: index,
+      s: command[1] === 1 ? 'push' : 'pop',
+      x: command[2],
+      offset: command[3]
+    }
+  })
+  let stack = []
+  _.each(actions, action => {
+    if (action.s === 'push') {
+      stack.push(action)
+    } else {
+      let popped = stack.pop()
+      action.popIndex = popped.i
+      popped.pushIndex = action.i
+      let diff = -action.x - popped.offset
+      action.diff = diff
+      // action.fn = () => input[popped.i] - diff
+      popped.diff = diff
+      // popped.fn = (smallest) => {
+      //   if (smallest) {
+      //     return diff >= 0 ? 1 : 1 + diff
+      //   } else {
+      //     return diff >= 0 ? 9 : 9 + diff
+      //   }
+      // }
+    }
+  })
+  // console.log(actions)
+  for (let i = 0; i < input.length; i++) {
+    let stack = actions[i].s
+    if (smallest && stack === 'push') {
+      input[i] = actions[i].diff >= 0 ? 1 + actions[i].diff : 1
+    } else if (stack === 'push') {
+      input[i] = actions[i].diff >= 0 ? 9 : 9 + actions[i].diff
+    } else {
+      input[i] = input[actions[i].popIndex] - actions[i].diff
+    }
+  }
+  for (let i = 0; i < input.length; i++) {
+    console.log(
+      _.pad(i, 2, ' '),
+      _.pad(actions[i].s, 4, ' '), '|',
+      actionAsString(actions[i], input))
+  }
+  let result = execProgram(fullProgram, _.clone(input))
+  return {i: input.join(''), z: result.z}
+}
+
+function actionAsString(action, input) {
+  let {s, i, pushIndex, popIndex, diff} = action
+  let fromI = s === 'push' ? pushIndex : popIndex
+  let arg = s === 'push' ? ((diff < 0) ? '-' : '+') : (diff < 0) ? '+' : '-'
+  let d = Math.abs(diff)
+  let fromIStr = _.padStart(fromI, 2, ' ')
+  let iStr = _.padStart(i, 2, ' ')
+  return `input[${iStr}] = input[${fromIStr}] ${arg} ${d} | ${input[i]} = ${input[fromI]} ${arg} ${d}`
 }
 
 function runCumulative(fullProgram) {
@@ -28,13 +133,13 @@ function runCumulative(fullProgram) {
   // })
   runSlowBack(fullProgram, slowMap)
   const t2 = performance.now()
-  console.log(`Duration: ${ms(t1-t0)} + ${ms(t2-t1)} = ${ms(t2-t0)}`)
+  console.log(`Duration: ${ms(t1 - t0)} + ${ms(t2 - t1)} = ${ms(t2 - t0)}`)
 }
 
 function getResultSetCumulative(t0, fullProgram, numDigits, curDigit = 0, prevResultCount = {}) {
   let testNum = getNextNumber(null, 1)
   // do 1 step
-  let program = fullProgram.slice(curDigit, curDigit+1)
+  let program = fullProgram.slice(curDigit, curDigit + 1)
   let testZs = _.keys(prevResultCount)
   if (testZs.length === 0) {
     testZs = [0]
@@ -47,8 +152,10 @@ function getResultSetCumulative(t0, fullProgram, numDigits, curDigit = 0, prevRe
       let newNum = [].concat((prevResultCount[startZ] || []), testNum)
       let resultNum = Number(newNum.join(''))
       let existingNum = resultCount[result.z]
-      if(existingNum){ existingNum = Number(existingNum.join(''))}
-      if(existingNum == null || (SMALLEST && existingNum > resultNum) || (!SMALLEST && existingNum < resultNum)){
+      if (existingNum) {
+        existingNum = Number(existingNum.join(''))
+      }
+      if (existingNum == null || (SMALLEST && existingNum > resultNum) || (!SMALLEST && existingNum < resultNum)) {
         resultCount[result.z] = newNum
       }
     }
@@ -58,8 +165,8 @@ function getResultSetCumulative(t0, fullProgram, numDigits, curDigit = 0, prevRe
   if (curDigit > 0) {
     console.log(`Completed Digit ${curDigit + 1}, result set size: ${_.keys(resultCount).length}, duration ${ms(t1 - t0)}`)
   }
-  if(curDigit < numDigits-1){
-    return getResultSetCumulative(t0, fullProgram, numDigits, curDigit+1, resultCount)
+  if (curDigit < numDigits - 1) {
+    return getResultSetCumulative(t0, fullProgram, numDigits, curDigit + 1, resultCount)
   }
   return {resultCount}
 }
@@ -81,7 +188,7 @@ function runSlow(fullProgram) {
   runSlowBack(fullProgram, frontList)
 }
 
-function runSlowBack(fullProgram, frontList){
+function runSlowBack(fullProgram, frontList) {
   let t0 = performance.now()
   let lastPrintedProgress = 0
   for (let i = 0; i < frontList.length; i++) {
@@ -95,7 +202,7 @@ function runSlowBack(fullProgram, frontList){
       lastPrintedProgress = progress
     }
     if (bestZero) {
-      if(_.isArray(num)){
+      if (_.isArray(num)) {
         console.log('number', '' + num.join('') + bestZero)
       } else {
         console.log('number', '' + num + bestZero)
@@ -219,26 +326,6 @@ function execCommand(command, state, inputs) {
   return state
 }
 
-function execCustomCommand(state, input, zVal, xVal, yVal) {
-  if (!input) {
-    return state
-  }
-  let action = zVal === 1 ? 'push' : 'pop'
-  let z = state.z
-  let x = ((z % 26) + xVal) === input ? 0 : 1
-  if(action === 'pop'){
-    z = Math.trunc(z / 26)
-  }
-  if (x) {
-    z = 26 * z + input + yVal
-  }
-  return {
-    w: input,
-    x,
-    y: x ? (input + yVal) : 0,
-    z
-  }
-}
 
 function parseCommand(line) {
   let splitLine = line.split(' ')
