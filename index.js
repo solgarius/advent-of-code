@@ -4,15 +4,18 @@ const yargs = require('yargs')
 
 const argv = yargs
   .option('d', {description: 'Run advent of code day', type: 'number'})
+  .option('y', {description: 'Run advent of code year', type: 'number'})
   .option('t', {description: 'test mode', type: 'boolean'})
   .help()
   .alias('help', 'h')
   .argv;
 
+let year = argv.y || 2022
+
 if (argv.d) {
   let day = null
   try {
-    day = import(`./day-${argv.d}/day${argv.d}.mjs`)
+    day = import(`./${year}/day-${argv.d}/day${argv.d}.mjs`)
 
   } catch (e) {
     console.error(`Day ${argv.d} has not been implemented, ${e}`)

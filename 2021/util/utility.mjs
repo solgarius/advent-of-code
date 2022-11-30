@@ -14,11 +14,4 @@ async function getLines(filename) {
   return content.split(/\r?\n/);
 }
 
-async function getLinesForDay(year, day, isTest) {
-  let rootDir = await getRootDir()
-  let filename = `./${year}/day-${day}/${isTest ? 'dataTest.csv': 'data.csv'}`
-  const content = await readFile(path.resolve(rootDir, filename), 'UTF-8')
-  return content.split(/\r?\n/);
-}
-
-export {getLines, getLinesForDay}
+export {getLines}
