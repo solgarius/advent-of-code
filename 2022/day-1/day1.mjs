@@ -1,59 +1,47 @@
 import {getLinesForDay} from '../../util/utility.mjs'
 
 async function run(testMode) {
-  const testDepths = [199, 200, 208, 210, 200, 207, 240, 269, 260, 263]
-  const depths = testMode ? testDepths : await getDepths()
-  const singleIncreaseCount = await runSingle(depths)
-  const slidingIncreaseCount = await runSliding(depths)
+  const elves = await getData(testMode)
+  const mostCalories = await runSingle(elves)
+  const totalTop3 = await runTop3(elves)
 
-  console.log(`single increases ${singleIncreaseCount}`)
-  console.log(`sliding increases ${slidingIncreaseCount}`)
+  console.log(`Most Calories ${mostCalories}`)
+  console.log(`Total Top 3 ${totalTop3}`)
 }
 
-async function runSingle(depths = [0]) {
-  let prevDepth = null
-  let increaseCount = 0
-  for (const depth of depths) {
-    if (Number.isInteger(prevDepth) && Number.isInteger(depth) && depth > prevDepth) {
-      increaseCount++
-    }
-    prevDepth = depth
-  }
-  return increaseCount
-}
-
-async function runSliding(depths = [0]) {
-  let window = [0, 0, 0, 0]
-  let increaseCount = 0
-  for (const depth of depths) {
-    if (Number.isInteger(depth)) {
-      window.shift()
-      window.push(depth)
-      if (window[0] && window[1] && window[2] && window[3]) {
-        const prev = window[0] + window[1] + window[2]
-        const cur = window[1] + window[2] + window[3]
-        if (prev < cur) {
-          increaseCount++
-        }
-      }
+async function runSingle(elves = []) {
+  let mostCalories = 0
+  for (const elf of elves) {
+    if(elf && elf.total > mostCalories){
+      mostCalories = elf.total
     }
   }
-  return increaseCount
+  return mostCalories
 }
 
-async function getDepths() {
-  const lines = await getLinesForDay(2022, 1)
-  let depths = []
+async function runTop3(elves = [0]) {
+  elves.sort((elf1, elf2)=>elf2.total-elf1.total)
+  return elves[0].total + elves[1].total + elves[2].total
+}
+
+async function getData(isTest) {
+  const lines = await getLinesForDay(2022, 1, isTest)
+  let elves = [{total:0, items:[]}]
+  let biggestElf = elves[0]
   for (const line of lines) {
     try {
-      const depth = Number(line)
-      if (depth != null) {
-        depths.push(depth)
+      const calories = line ? Number(line) : null
+      if (calories != null) {
+        let elf = elves[elves.length-1]
+        elf.items.push(calories)
+        elf.total += calories
+      } else {
+        elves.push({total:0, items:[]})
       }
     } catch (e) {
     }
   }
-  return depths
+  return elves
 }
 
 export {run}
