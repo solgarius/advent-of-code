@@ -25,6 +25,10 @@ if (argv.d) {
       console.log(`completed in ${ms(output.total)}  moduleLoad: ${ms(output.moduleLoad)} code time: ${ms(output.codeExec)}`)
       setTimeout(process.exit)
     })
+    .catch((error)=>{
+      console.error(error)
+      setTimeout(process.exit)
+    })
 
   }
 } else {
