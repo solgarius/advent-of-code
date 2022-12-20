@@ -98,7 +98,7 @@ function getMostGeodes(blueprint, allTimeRemaining = 24){
     if(!builtGeode && check.robots.ore < maxRobots.ore){
       // try waiting to build an ore
       let timeToWait = getTimeToWaitForResource('ore', 'ore', blueprint, check.supply, check.robots)
-      if(timeToWait < check.timeRemaining-4){ // need at least 2 mins for an ore to be useful
+      if(timeToWait < check.timeRemaining-4){ // need at least 4 mins for an ore to be useful
         let newRobots = {...check.robots}
         let newSupply = {...check.supply}
         addSupplies(newRobots, newSupply, timeToWait)
