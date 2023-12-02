@@ -15,7 +15,7 @@ const wordMap = {
 const letterMap = getLetterMap(wordMap);
 const invertedLetterMap = getLetterMap(wordMap, true)
 
-async function run(testMode) {
+async function run(lines, testMode) {
   const values = await getData(testMode)
   const sumPt1 = await getTotal(values, 'pt1')
   const sumPt2 = await getTotal(values, 'pt2')
