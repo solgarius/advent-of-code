@@ -4,14 +4,13 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
-            "name": "AoC 2023 Test",
+            "name": "AoC23 Test",
             "type": "node",
             "request": "launch",
             "program": "${workspaceRoot}/index.js",
             "stopOnEntry": false,
-            "args": ["-y","2023", "-t", "-d", "2"],
+            "args": ["-y","2023", "-t", "-d", "5"],
             "cwd": "${workspaceRoot}",
             "preLaunchTask": null,
             "runtimeExecutable": null,
@@ -26,12 +25,52 @@
             "outDir": null
         },
         {
-            "name": "AoC 2023",
+            "name": "AoC23",
             "type": "node",
             "request": "launch",
             "program": "${workspaceRoot}/index.js",
             "stopOnEntry": false,
-            "args": ["-y","2023", "-d", "2"],
+            "args": ["-y","2023", "-d", "5"],
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": null,
+            "runtimeExecutable": null,
+            "runtimeArgs": [
+                "--nolazy"
+            ],
+            "env": {
+                "NODE_ENV": "development"
+            },
+            "externalConsole": false,
+            "sourceMaps": false,
+            "outDir": null
+        },
+        {
+            "name": "AoC15 Test",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/index.js",
+            "stopOnEntry": false,
+            "args": ["-y","2015", "-t", "-d", "1"],
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": null,
+            "runtimeExecutable": null,
+            "runtimeArgs": [
+                "--nolazy"
+            ],
+            "env": {
+                "NODE_ENV": "development"
+            },
+            "externalConsole": false,
+            "sourceMaps": false,
+            "outDir": null
+        },
+        {
+            "name": "AoC15",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/index.js",
+            "stopOnEntry": false,
+            "args": ["-y","2015", "-d", "1"],
             "cwd": "${workspaceRoot}",
             "preLaunchTask": null,
             "runtimeExecutable": null,
