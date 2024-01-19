@@ -20,7 +20,7 @@ if (argv.d) {
   if (!checkFileExists(filePath)) {
     filePath = `./${year}/day-${argv.d}/day${argv.d}.mjs`;
     if (!checkFileExists(filePath)) {
-      console.error(`Day ${argv.d} has not been implemented, ${e}`)
+      console.error(`Day ${argv.d} has not been implemented yet`)
       setTimeout(process.exit)
     }
   }
