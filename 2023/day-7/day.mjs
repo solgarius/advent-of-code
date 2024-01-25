@@ -19,19 +19,24 @@ async function parseLines(lines) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     const [cards, bid] = line.split(' ')
-    hands.push({cards: cards.split(''), bid: parseInt(bid)})
+    const hand = {cards: cards.split(''), bid: parseInt(bid)}
+    hand.original = [...hand.cards]
+    hand.cards = hand.cards.sort((a,b)=> getCardScore(b) - getCardScore(a))
+    hand.entries = getHandEntries(getHandMap(hand))
+    hand.jokerEntries = getHandEntriesWithJokers(getHandMap(hand))
+    hand.type = getHandType(hand.entries)
+    hand.jokerType = getHandType(hand.jokerEntries)
+    hands.push(hand)
   }
   return { hands }
 }
 
 function part1({ hands } = {}) {
-  for(let i = 0; i < hands.length; i++){
-    const hand = hands[i]
-    hand.cards = hand.cards.sort((a,b)=> getCardScore(b) - getCardScore(a))
-    hand.type = getHandType(hand)
-  }
-  let sortedHands = hands.sort(compareHands)
-  console.log(sortedHands)
+
+  let sortedHands = hands.sort((a,b)=> compareHands(a.original, a.type, b.original, b.type))
+  // for(let hand of sortedHands){
+    // console.log(hand.cards.join(''), hand.type, hand.bid)
+  // }
   let score = 0
   for(let i =0; i < sortedHands.length; i++){
     score += (i+1) * (sortedHands[i].bid)
@@ -40,19 +45,33 @@ function part1({ hands } = {}) {
 }
 
 function part2({ hands } = {}) {
-  return 0
+  let sortedHands = hands.sort((a,b)=> 
+    compareHands(a.original, a.jokerType, b.original, b.jokerType, true))
+  // for(let hand of sortedHands){
+  //   console.log(hand.cards.join(''), hand.type, hand.bid)
+  // }
+  let score = 0
+  for(let i =0; i < sortedHands.length; i++){
+    score += (i+1) * (sortedHands[i].bid)
+  }
+  return score
 }
 
-function compareHands(handA, handB) {
-  const entriesA = getHandEntries(getHandMap(handA))
-  const entriesB = getHandEntries(getHandMap(handB))
-  for(let i = 0; i < entriesA.length; i++){
-    const entryA = entriesA[i]
-    const entryB = entriesB[i]
-    if(entryA[1] !== entryB[1]){
-      return entryA[1] - entryB[1]
-    } else if(entryA[0] !== entryB[0]){
-      return entryA[0] - entryB[0]
+function compareHands(aOriginal, aType, bOriginal, bType, jokerScoreMode = false) {
+  if(aType !== bType){
+    return aType - bType
+  }
+  for(let i = 0; i < aOriginal.length; i++){
+    let cardA = aOriginal[i]
+    let cardB = bOriginal[i]
+    if(cardA !== cardB){
+      if(jokerScoreMode && cardA === 'J'){
+        cardA = '1'
+      }
+      if(jokerScoreMode && cardB === 'J'){
+        cardB = '1'
+      }
+      return getCardScore(cardA) - getCardScore(cardB)
     }
   }
   return 0
@@ -89,6 +108,9 @@ function getHandMap(hand){
 
 function getHandEntries(handMap){
   const entries = Object.entries(handMap)
+  for(let entry of entries){
+    entry[0] = parseInt(entry[0])
+  }
   return entries.sort((a, b) => {
     let countDiff = b[1] - a[1]
     if(countDiff !== 0){
@@ -98,24 +120,49 @@ function getHandEntries(handMap){
   })
 }
 
-function getHandType(hand){
-  const handEntries = getHandEntries(getHandMap(hand))
-  if (isFiveOfAKind(handEntries)) {
+function getHandEntriesWithJokers(handMap){
+  const entries = Object.entries(handMap)
+  for(let entry of entries){
+    entry[0] = parseInt(entry[0])
+  }
+  let jokerIndex = entries.findIndex(entry => entry[0] === getCardScore('J'))
+  let jokerCount = 0
+  if(jokerIndex >= 0){
+    jokerCount = entries[jokerIndex][1]
+    if(jokerCount < 5){
+      entries.splice(jokerIndex, 1)
+    }
+  }
+  let newEntries = entries.sort((a, b) => {
+    let countDiff = b[1] - a[1]
+    if(countDiff !== 0){
+      return countDiff
+    }
+    return b[0] - a[0]
+  })
+  if(jokerCount < 5){
+    newEntries[0][1] += jokerCount
+  }
+  return newEntries
+}
+
+function getHandType(entries){
+  if (isFiveOfAKind(entries)) {
     return FIVE_OF_A_KIND
   }
-  if (isFourOfAKind(handEntries)) {
+  if (isFourOfAKind(entries)) {
     return FOUR_OF_A_KIND
   }
-  if (isFullHouse(handEntries)) {
+  if (isFullHouse(entries)) {
     return FULL_HOUSE
   }
-  if (isThreeOfAKind(handEntries)) {
+  if (isThreeOfAKind(entries)) {
     return THREE_OF_A_KIND
   }
-  if (isTwoPair(handEntries)) {
+  if (isTwoPair(entries)) {
     return TWO_PAIR
   }
-  if (isOnePair(handEntries)) {
+  if (isOnePair(entries)) {
     return ONE_PAIR
   }
   return HIGH_CARD
