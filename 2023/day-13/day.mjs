@@ -1,5 +1,3 @@
-import {memoize} from '../../util/utility.mjs'
-
 async function run(lines) {
   const parsedData = await parseLines(lines);
   console.log(`Part 1: ${part1(parsedData)}`);
