@@ -4,8 +4,8 @@ const yargs = require('yargs')
 const fs = require('fs')
 
 const argv = yargs
-  .option('d', { description: 'Run advent of code day', type: 'number' })
-  .option('y', { description: 'Run advent of code year', type: 'number' })
+  .option('d', { description: 'Run advent of code day', type: 'string' })
+  .option('y', { description: 'Run advent of code year', type: 'string' })
   .option('t', { description: 'test mode', type: 'boolean' })
   .help()
   .alias('help', 'h')
