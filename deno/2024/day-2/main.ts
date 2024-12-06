@@ -9,55 +9,43 @@ const data: number[][] = [];
 for (let line of lines) {
     data.push(line.split(' ').map(Number));
 }
-let gaps: number[] = [];
 let safeCount = 0;
 for (let row of data) {
-     gaps = getGaps(row);
-    if (row.length > 1 &&isSafe(gaps)) safeCount++;
+    if (isSafe(row)) safeCount++;
 }
 console.log(`part 1: ${safeCount}`);
-safeCount = 0;
-for (let row of data) {
-    gaps = getGaps(row);
-    if (row.length > 1 &&isSafe(gaps, true)) {
-        if(!isSafe(row, false)){
-        console.log(row, 'now safe');
-        }
-        safeCount++;
-    } else {
-        // console.log(row, 'unsafe');
-    }
-}
-console.log(`part 2: ${safeCount}`);
+console.log(`part 2: ${part2(data).length}`);
 
-function getGaps(row: number[]){
-    let gaps: number[] = [];
-    for(let i =0; i < row.length-1;i++){
-        gaps.push(row[i+1] - row[i]);
-    }
-    return gaps
-}
+function part2(rows){
+    let safeRows: number[] = [];
 
-function isSafe(gaps: number[], canSkipACol: boolean = false) {
-    for(let i =0; i < gaps.length; i++){
-        if(!isPairSafe(gaps[i],gaps[i-1])){
-            if(canSkipACol){
-                canSkipACol = false
-                if(!isPairSafe(gaps[i]+gaps[i+1], gaps[i-1])){
-                    console.log(`CANNOT SKIP ${gaps[i-1]} ${gaps[i]} ${gaps[i+1]}`, gaps)
-                    return false
-                }
-                i++
-            } else {
-                return false
-            }
-        }
-    }
-    return true;
+	for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        const row = rows[rowIndex];
+		let safeEnough = false;
+
+		for (let i = 0; i < row.length; i++) {
+			const removed = [...row.slice(0, i), ...row.slice(i + 1)];
+
+			if (isSafe(removed)) {
+				safeEnough = true;
+				break;
+			}
+		}
+
+		if (safeEnough || isSafe(row)) safeRows.push(rowIndex);
+	}
+    return safeRows;
 }
 
-function isPairSafe(gap: number, prevGap: number = 0) {
-    if(gap === 0 || Math.abs(gap) > 3) { return false; }
-    if((gap * prevGap) < 0){ return false; }
-    return true;
+function isSafe(row: number[]) {
+	const differences: number[] = [];
+
+	for (let i = 1; i < row.length; i++) {
+		differences.push(row[i] - row[i - 1]);
+	}
+
+	const increasing = differences.every((d) => d >= 1 && d <= 3);
+	const decreasing = differences.every((d) => d <= -1 && d >= -3);
+
+	return increasing || decreasing;
 }
