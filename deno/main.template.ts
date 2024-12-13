@@ -1,10 +1,8 @@
-const TEST = false; // Correct = 1793
+const TEST = true;
 const filename = TEST ? "./input-test" : "./input";
 const file = await Deno.readTextFile(filename);
 const lines = file.replaceAll("\r", "").split("\n");
 const data = parseLines(lines);
-
-type Position = { x: number; y: number; dir?: string };
 
 const p1t0 = performance.now();
 const p1Log = part1(data);
