@@ -1,9 +1,151 @@
 const TEST = false;
+const DEBUG = false;
 
 const filename = TEST ? "./input-test" : "./input";
 const file = await Deno.readTextFile(filename);
 const lines = file.replaceAll("\r", "").split("\n");
 const { numbers } = parseLines(lines);
+class ListNode {
+  id: number;
+  length: number;
+  endNode: boolean = false;
+  next: ListNode | null = null;
+  prev: ListNode | null = null;
+
+  constructor(id: number, length: number) {
+    this.id = id;
+    this.length = length;
+  }
+
+  splitNode(newFirstId: number, newFirstLength: number): boolean {
+    if (newFirstLength > this.length) {
+      return false;
+    } else if (newFirstLength === this.length) {
+      this.id = newFirstId;
+      return true;
+    }
+    let newNode = new ListNode(newFirstId, newFirstLength);
+    this.length = this.length - newFirstLength;
+    if (this.prev) {
+      this.prev.next = newNode;
+    }
+    newNode.prev = this.prev;
+    newNode.next = this;
+    this.prev = newNode;
+    return true;
+  }
+
+  merge(this: ListNode): boolean {
+    let merged = false;
+    if (this.next && this.id === this.next.id && !this.next.endNode) {
+      this.length += this.next.length;
+      this.next = this.next.next;
+      if (this.next) {
+        this.next.prev = this;
+      }
+      merged = true;
+    }
+    if (this.prev && this.id === this.prev.id && !this.prev.endNode) {
+      this.prev.length += this.length;
+      this.prev.next = this.next;
+      if (this.next) {
+        this.next.prev = this.prev;
+      }
+      merged = true;
+    }
+    return merged;
+  }
+}
+
+class NodeLinkedList {
+  head: ListNode = new ListNode(-1, 0);
+  tail: ListNode = new ListNode(-1, 0);
+
+  constructor() {
+    this.head.endNode = true;
+    this.tail.endNode = true;
+    this.head.next = this.tail;
+    this.tail.prev = this.head;
+  }
+
+  getListLength(): number {
+    let length = 0;
+    let current = this.getHead();
+    while (current !== this.tail) {
+      if (current !== this.head && current !== this.tail) {
+        length++;
+      }
+      current = current.next!;
+    }
+    return length;
+  }
+
+  getLength(): number {
+    let length = 0;
+    let current = this.getHead();
+    while (current !== this.tail) {
+      length += current.length;
+      current = current.next!;
+    }
+    return length;
+  }
+
+  addNode(id: number, length: number) {
+    const newNode = new ListNode(id, length);
+    if (this.head.next === this.tail) {
+      this.head.next = newNode;
+    }
+    newNode.prev = this.tail.prev;
+    newNode.next = this.tail;
+    if (this.tail.prev) {
+      this.tail.prev.next = newNode;
+    }
+    this.tail.prev = newNode;
+  }
+
+  getHead(): ListNode {
+    return this.head.next || this.head;
+  }
+
+  getTail(): ListNode {
+    return this.tail.prev || this.tail;
+  }
+
+  addBefore(node: ListNode, before: ListNode) {
+    if (node === before) {
+      return;
+    }
+    if (node === this.head || node === this.tail) {
+      return;
+    }
+    if (before === this.head || before === this.tail) {
+      return;
+    }
+    node.prev = before.prev;
+    node.next = before;
+    if (before.prev) {
+      before.prev.next = node;
+    }
+    before.prev = node;
+  }
+
+  printList() {
+    if (!DEBUG) { return }
+    let current = this.head.next || new ListNode(-1, 0);
+    let str = ''
+    while (current !== this.tail) {
+      if (current.id < 0) {
+        str += '.'.repeat(current.length);
+      } else {
+        str += (current.id + '').repeat(current.length);
+      }
+      str += ' ';
+      current = current.next!;
+    }
+    console.log(this.getListLength(), this.getLength(), str);
+  }
+}
+
 
 const p1t0 = performance.now();
 const p1Log = part1(numbers);
@@ -59,62 +201,58 @@ function part2(
   numbers: number[],
 ): number {
   let id = 0;
-
-  let head: ListNode | null = null;
-  let tail: ListNode | null = null;
-
+  let list = new NodeLinkedList();
   for (let i = 0; i < numbers.length; i++) {
-    const newNode = new ListNode(i % 2 === 0 ? id++ : -1, numbers[i]);
-    if (!head) {
-      head = newNode;
-      tail = newNode;
-    } else {
-      tail!.next = newNode;
-      newNode.prev = tail;
-      tail = newNode;
-    }
+    list.addNode(i % 2 === 0 ? id++ : -1, numbers[i]);
   }
 
-  // Example of traversing the list
-  let current = head;
-  let currentTail = tail;
+  list.printList();
+  let curTail: ListNode | null = list.getTail();
+  let cur: ListNode | null = list.getHead();
+  while (curTail) {
+    if (curTail.id >= 0) {
+      if (moveToEmptyBlock(curTail, list)) {
+        list.printList();
+      }
+    }
+    curTail = curTail.prev;
+
+  }
+
+  list.printList();
+
   let score = 0;
   let index = 0;
-
-  while (current) {
-    if (current.id < 0) {
-      let tailLen = currentTail?.length || 0;
-      if (tailLen < current.length) {
-        current.length -= tailLen;
-        for (let i = 0; i < tailLen; i++) {
-          score += index * currentTail!.id;
-          index++;
-        }
-        if (currentTail) {
-          currentTail.id = -1;
-        }
-        currentTail = currentTail?.prev?.prev || null;
+  cur = list.getHead();
+  while (cur) {
+    if (cur.id >= 0) {
+      for (let i = 0; i < cur.length; i++) {
+        score += index * cur.id;
+        index++;
       }
     } else {
-      for (let i = 0; i < current.length || 0; i++) {
-        score += index * current.id; 
-        index++;
-        current = current.next;
+      index += cur.length;
     }
+    cur = cur.next;
   }
   return score;
 }
 
-class ListNode {
-  id: number;
-  length: number;
-  next: ListNode | null = null;
-  prev: ListNode | null = null;
-
-  constructor(id: number, length: number) {
-    this.id = id;
-    this.length = length;
+function moveToEmptyBlock(node: ListNode, list: NodeLinkedList): boolean {
+  let cur = list.getHead();
+  let moved = false;
+  while (cur !== node) {
+    if (cur.id === -1 && cur.length >= node.length) {
+      cur.splitNode(node.id, node.length);
+      node.id = -1;
+      node.merge();
+      cur.merge();
+      moved = true;
+      break;
+    }
+    cur = cur.next!;
   }
+  return moved;
 }
 
 function parseLines(lines: string[]): { numbers: number[] } {
