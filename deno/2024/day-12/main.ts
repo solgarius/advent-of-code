@@ -52,7 +52,17 @@ function part1(
 function part2(
   data: object,
 ): number {
-  return 0;
+  const { farm } = data as { farm: Plot[][] };
+  let score = 0;
+  const regions = getRegions(farm);
+  console.log(`Found ${regions.length} regions`);
+  for(const region of regions) {
+    const edges = getEdges(region);
+    const sides = getSides(edges);
+    // console.log(`Region ${region.value} has ${edgeCount} * ${region.plots.size} = ${edgeCount * region.plots.size}`);
+    score += sides.length * region.plots.size;
+  }
+  return score;
 }
 
 
@@ -63,7 +73,6 @@ function getKey(plot: Plot): string {
 function getRegions(farm: Plot[][]): Region[] {
   const regions: Region[] = [];
   for (let i = 0; i < farm.length; i++) {
-    console.log(`Row ${i}`);
     for (let j = 0; j < farm[i].length; j++) {
       const plot = farm[i][j];
       if(!isInRegion(plot, regions)){
@@ -95,10 +104,8 @@ function getRegion(plot: Plot, farm: Plot[][]): Region {
     if(!region.plots.has(key)){
       region.plots.set(key, currentPlot);
     }
-    const neighbours = getNeighbours(currentPlot, farm);
-    for (const neighbour of neighbours) {
-      if (neighbour.value === plot.value && 
-        !region.plots.has(getKey(neighbour)) &&
+    for (const neighbour of currentPlot.commonNeighbours) {
+      if (!region.plots.has(getKey(neighbour)) &&
         !queue.includes(neighbour)) {
         queue.push(neighbour);
       }
@@ -113,6 +120,30 @@ function getEdges(region: Region): string[] {
     edges.push(...plot.regionEdges);
   }
   return edges;
+}
+
+function getSides(edges: string[]): string[] {
+  const sides: string[] = [];
+  const xEdges: Map<string, number[]> = new Map();
+  const yEdges: Map<string, number[]> = new Map();
+  for (const edge of edges) {
+    const [x, y] = edge.split(",");
+    if(x.indexOf("-")>=0){
+      if(!xEdges.has(x)){
+        xEdges.set(x, []);
+      }
+      xEdges.get(x)?.push(parseInt(y));
+    } else if(y.indexOf("-")>=0){
+      if(!yEdges.has(y)){
+        yEdges.set(y, []);
+      }
+      yEdges.get(y)?.push(parseInt(x));
+    }
+  }
+  // const sortedEdges = edges.sort();
+  // console.log(`Edges: ${sortedEdges.join(" | ")}`);
+
+  return sides;
 }
 
 function getEdgeKey(plot1: PlotLoc, plot2: PlotLoc): string {
