@@ -59,7 +59,7 @@ function part2(
   for(const region of regions) {
     const edges = getEdges(region);
     const sides = getSides(edges);
-    // console.log(`Region ${region.value} has ${edgeCount} * ${region.plots.size} = ${edgeCount * region.plots.size}`);
+    console.log(`Region ${region.value} has ${sides.length} * ${region.plots.size} = ${sides.length * region.plots.size}`);
     score += sides.length * region.plots.size;
   }
   return score;
@@ -122,7 +122,13 @@ function getEdges(region: Region): string[] {
   return edges;
 }
 
-function getSides(edges: string[]): string[] {
+/**
+ * Merges together consecutive edges so that they are merged into a single side. 
+ * For example 1,1-2 & 1,2-3 transforms to 1,1-3 
+ * @param edges The 1 length edge around a shape on an x/y 2d grid.
+ * @returns 
+ */
+export function getSides(edges: string[]): string[] {
   const sides: string[] = [];
   const xEdges: Map<string, number[]> = new Map();
   const yEdges: Map<string, number[]> = new Map();
@@ -140,20 +146,49 @@ function getSides(edges: string[]): string[] {
       yEdges.get(y)?.push(parseInt(x));
     }
   }
-  // const sortedEdges = edges.sort();
-  // console.log(`Edges: ${sortedEdges.join(" | ")}`);
+  for (const [xRange, yValues] of xEdges) {
+    yValues.sort((a, b) => a - b);
+    let startY = yValues[0];
+    let endY = yValues[0];
+    for (let i = 1; i < yValues.length; i++) {
+      if (yValues[i] === endY + 1) {
+        endY = yValues[i];
+      } else {
+        sides.push(`${xRange},${startY}-${endY}`);
+        startY = yValues[i];
+        endY = yValues[i];
+      }
+    }
+    sides.push(`${xRange},${startY}-${endY}`);
+  }
+
+  for (const [yRange, xValues] of yEdges) {
+    xValues.sort((a, b) => a - b);
+    let startX = xValues[0];
+    let endX = xValues[0];
+    for (let i = 1; i < xValues.length; i++) {
+      if (xValues[i] === endX + 1) {
+        endX = xValues[i];
+      } else {
+        sides.push(`${startX}-${endX},${yRange}`);
+        startX = xValues[i];
+        endX = xValues[i];
+      }
+    }
+    sides.push(`${startX}-${endX},${yRange}`);
+  }
 
   return sides;
 }
 
 function getEdgeKey(plot1: PlotLoc, plot2: PlotLoc): string {
   if(plot1.x !== plot2.x){
-    const x1 = Math.min(plot1.x, plot2.x);
-    const x2 = Math.max(plot1.x, plot2.x);
+    const x1 = plot1.x;
+    const x2 = plot2.x;
     return `${x1}-${x2},${plot1.y}`;
   }
-  const y1 = Math.min(plot1.y, plot2.y);
-  const y2 = Math.max(plot1.y, plot2.y);
+  const y1 = plot1.y;
+  const y2 = plot2.y;
   return `${plot1.x},${y1}-${y2}`;
 }
 
